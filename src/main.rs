@@ -1,7 +1,7 @@
 use actix_multipart::{Multipart, Field, MultipartError};
 use actix_web::{
     get, post,
-    web::{self, Bytes},
+    web::{self, Buf, Bytes},
     App, HttpResponse, HttpServer, Responder,
 };
 
@@ -55,46 +55,68 @@ async fn save_image(mut payload: Multipart) -> impl Responder {
             return HttpResponse::Ok().body("Couldnt Create File");
         }
     };
-   
+   ;
     return match  file.write_all(&content).map(|_| file)
     {
         Ok(_) => HttpResponse::Ok().body("Done"),
         Err(_) => HttpResponse::Ok().body("Failed to Copy Recived data into file"),
-    };  
+    }; 
+
 }
-async fn get_bytes(field:Result<Option<Field>,MultipartError>)->Option<Bytes>
+async fn get_bytes(field:Result<Option<Field>,MultipartError>)->Option<Vec<u8>>
 {
     let field = match field
     {
         Ok(data) =>data,        
         Err(_) => 
         {
-            println!("Fail to Parse Payload First Result Field in the form");
+            println!("Fail to Parse Payload First Result Field in the form {}",line!() );
             return None;
         }
     };
-    get_field_bytes(field).await  
+    get_field_bytes(field).await
+
+    
+    
+
 }
-async fn get_field_bytes(mut field:Option<Field>)->Option<Bytes>
+async fn get_field_bytes(mut field:Option<Field>)->Option<Vec<u8>>
 {
-    let field = match field
+    let mut field = match field
     {
-        Some(mut data) => match data.try_next().await 
-        {
-            Ok(data) =>data,
-            Err(_) => 
-            {     
-                println!("Fail to Parse Payload First Result Field in the form");
-                return None;
-            }
-        },
+        Some(mut data) => data,
+        
         None =>
         {
-            println!("Fail to Parse Payload  First Option Field in the form");
+            println!("Fail to Parse Payload  First Option Field in the form {}",line!() );
               return None;
         }
     };
-    field
+    let mut bytes_vec=Vec::<u8>::new();
+    let mut itteration_count=0;
+    while let Ok(data) = field.try_next().await 
+    {
+
+        let field=match data  
+        {
+            Some(data) =>data,
+            None => 
+            { 
+                if itteration_count>0 {
+                    
+                    break
+                }      
+                println!("Fail to Parse Payload First Result Field in the form {}",line!() );   
+                return  None;   
+            }
+        };
+        itteration_count+=1;
+        bytes_vec.append(&mut field.to_vec());
+    }
+
+   
+
+   Some(bytes_vec)
 
 }
 
