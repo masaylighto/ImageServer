@@ -1,7 +1,7 @@
 use actix_multipart::{Multipart, Field, MultipartError};
 use actix_web::{
     get, post,
-    web::{self, Buf, Bytes},
+    web::{self},
     App, HttpResponse, HttpServer, Responder,
 };
 
@@ -11,7 +11,7 @@ use std::{
     env,
     fs::{self, File},
     io::{Read, Write},
-    vec, result, process::exit,
+    vec,
 };
 
 #[derive(Deserialize)]
@@ -38,11 +38,18 @@ async fn get_image_as_byte_array(request: web::Query<FileInfo>) -> impl Responde
 #[post("/SaveImage")]
 async fn save_image(mut payload: Multipart) -> impl Responder {
   
-    let name_Bytes=match  get_bytes(payload.try_next().await).await {
+    let directoy=match  get_bytes(payload.try_next().await).await {
         Some(data)=> data,
         None=> return HttpResponse::Ok().body("Fail to Field Parse  First Result Field in the form")
     };
-    let file_name = format!("{}", String::from_utf8_lossy(&name_Bytes));
+    let directoy = format!("{}", String::from_utf8_lossy(&directoy));
+    let name_bytes=match  get_bytes(payload.try_next().await).await {
+        Some(data)=> data,
+        None=> return HttpResponse::Ok().body("Fail to Field Parse  First Result Field in the form")
+    };
+   
+    let file_name = format!("{}", String::from_utf8_lossy(&name_bytes));
+    println!("{} {}",directoy,file_name);
     let content=match  get_bytes(payload.try_next().await).await {
         Some(data)=> data,
         None=> return HttpResponse::Ok().body("Fail to Field Parse  First Result Field in the form")
@@ -54,8 +61,7 @@ async fn save_image(mut payload: Multipart) -> impl Responder {
         {
             return HttpResponse::Ok().body("Couldnt Create File");
         }
-    };
-   ;
+    };   
     return match  file.write_all(&content).map(|_| file)
     {
         Ok(_) => HttpResponse::Ok().body("Done"),
@@ -80,11 +86,11 @@ async fn get_bytes(field:Result<Option<Field>,MultipartError>)->Option<Vec<u8>>
     
 
 }
-async fn get_field_bytes(mut field:Option<Field>)->Option<Vec<u8>>
+async fn get_field_bytes(field:Option<Field>)->Option<Vec<u8>>
 {
     let mut field = match field
     {
-        Some(mut data) => data,
+        Some(data) => data,
         
         None =>
         {
