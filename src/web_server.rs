@@ -21,7 +21,7 @@ async fn get_image_as_byte_array(request: web::Query<FileInfo>) -> impl Responde
     // the return type of the methos is Result<Vec<u8>,String> 
     // string is returned when there is error and it indicate the error and we return it to the client
     // the vec<u8> represnt the img bytes and we return it to the client
-   match file_manger::read_file(&request.path).await
+   match file_manger::read_file( &format!("Image/{}",&request.path)).await
    {
         Ok(data)=>
         {
@@ -84,6 +84,16 @@ fn index() -> HttpResponse
     // return the page content into the client
     HttpResponse::Ok().body(html)
 }
+#[get("/delete")]
+pub async fn delete_folder(folder_name: web::Query<FileInfo>)->impl Responder 
+{ print!("{}", &folder_name.path);
+      if fs::remove_dir_all(format!("Image/{}",&folder_name.path)).is_ok() {
+        print!("Done");
+    return  HttpResponse::Ok().body("Done");
+    } 
+    print!("fail");
+    HttpResponse::Ok().body("fail")
+}
 /// Run the web server
 #[actix_web::main]
 pub async fn start_the_server()-> std::io::Result<()>
@@ -94,6 +104,7 @@ pub async fn start_the_server()-> std::io::Result<()>
             .service(get_image_as_byte_array)
             .service(save_image)
             .service(index)
+            .service(delete_folder)
     })
     // bind the server into the specifed ip address
     .bind("127.0.0.1:8083")?
