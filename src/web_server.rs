@@ -94,6 +94,19 @@ pub async fn delete_folder(folder_name: web::Query<FileInfo>)->impl Responder
     print!("fail");
     HttpResponse::Ok().body("fail")
 }
+///get how many files there is in a folder
+#[get("/count")]
+pub async fn count(folder_name: web::Query<FileInfo>)->impl Responder 
+{ 
+   let dir=  fs::read_dir(format!("Image/{}",&folder_name.path));
+   if  dir.is_err() {
+    print!("fail");
+       return  HttpResponse::Ok().body("-1");
+   }
+   let counts =format!("{}",dir.unwrap().count());
+   print!("{}",counts);
+   return  HttpResponse::Ok().body(counts)
+}
 /// Run the web server
 #[actix_web::main]
 pub async fn start_the_server()-> std::io::Result<()>
@@ -105,6 +118,7 @@ pub async fn start_the_server()-> std::io::Result<()>
             .service(save_image)
             .service(index)
             .service(delete_folder)
+            .service(count)
     })
     // bind the server into the specifed ip address
     .bind("127.0.0.1:8083")?
